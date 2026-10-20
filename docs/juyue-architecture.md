@@ -73,6 +73,6 @@ app/src/main/java/io/legado/app/ui/juyue/
 | P3 | 分类：书源切换、分类栏、书籍流、分页 | 已完成：本地测试源端到端验证 |
 | P4 | 详情：封面、元信息、简介、目录、开始阅读 | 截图 + 阅读器跳转 |
 | P5 | 设置：五模块宫格 + 子页（密码/隐私/备份/书源更新/诊断） | 截图 + 每页可达 |
-| P6 | 阅读器 Compose 化 + RSS/WebDAV/TTS 入口 | 截图 + 功能回归 |
+| P6 | 阅读器 Compose 化 + RSS/WebDAV/TTS 入口 | 第一版完成：正文/菜单/目录/字号/进度；TTS 与翻页动画待接 |
 
 每阶段必须：`assembleDebug` → `adb install -r` → 启动截图 → 对照 iOS 修正后再进入下一阶段。

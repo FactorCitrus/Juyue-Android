@@ -68,9 +68,18 @@ private fun JuyueApp() {
     }
     var selected by rememberSaveable { mutableIntStateOf(0) }
     var settingsSubPage by remember { mutableStateOf(false) }
+    var readingBook by remember { mutableStateOf<Book?>(null) }
     var detailBook by remember { mutableStateOf<Book?>(null) }
+    readingBook?.let { book ->
+        JuyueReaderScreen(book = book, onBack = { readingBook = null })
+        return
+    }
     detailBook?.let { book ->
-        BookDetailScreen(book = book, onBack = { detailBook = null })
+        BookDetailScreen(
+            book = book,
+            onBack = { detailBook = null },
+            onRead = { readingBook = it },
+        )
         return
     }
     val gridColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.045f)

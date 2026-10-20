@@ -369,6 +369,7 @@ private fun BookshelfBookCard(book: Book, index: Int, onClick: () -> Unit) {
 fun BookDetailScreen(
     book: Book,
     onBack: () -> Unit,
+    onRead: ((Book) -> Unit)? = null,
 ) {
     BackHandler(onBack = onBack)
     val context = LocalContext.current
@@ -579,7 +580,9 @@ fun BookDetailScreen(
                 text = "开始阅读",
                 primary = true,
                 modifier = Modifier.weight(1f),
-                onClick = { context.startActivityForBook(book) },
+                onClick = {
+                    onRead?.invoke(book) ?: context.startActivityForBook(book)
+                },
             )
         }
     }
