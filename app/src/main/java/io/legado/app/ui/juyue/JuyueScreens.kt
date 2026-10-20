@@ -35,8 +35,12 @@ import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.outlined.MoreVert
 import androidx.compose.material.icons.outlined.CreateNewFolder
 import androidx.compose.material.icons.outlined.GridView
+import androidx.compose.material.icons.outlined.MenuBook
+import androidx.compose.material.icons.outlined.Palette
 import androidx.compose.material.icons.outlined.Search
+import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material.icons.outlined.Share
+import androidx.compose.material.icons.outlined.Storage
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
@@ -55,6 +59,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
@@ -98,7 +103,7 @@ fun BookshelfScreen(onBookClick: (Book) -> Unit = {}) {
         columns = GridCells.Fixed(if (compactGrid) 4 else 2),
         contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
-        verticalArrangement = Arrangement.spacedBy(10.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         item(span = { GridItemSpan(maxLineSpan) }) {
             BookshelfTopBar(
@@ -684,7 +689,8 @@ fun SettingsScreen() {
                 index = "01",
                 title = "阅读",
                 description = "字号、行距、背景与净化",
-                height = 112.dp,
+                height = 132.dp,
+                icon = Icons.Outlined.MenuBook,
                 onClick = {
                     context.startActivity(
                         Intent(context, ConfigActivity::class.java)
@@ -699,6 +705,7 @@ fun SettingsScreen() {
                     index = "02",
                     title = "外观",
                     description = "主题、图标与书架外观",
+                    icon = Icons.Outlined.Palette,
                     modifier = Modifier.weight(1f),
                     onClick = {
                         context.startActivity(
@@ -711,6 +718,7 @@ fun SettingsScreen() {
                     index = "03",
                     title = "内容源",
                     description = "书源、OPDS、RSS 与订阅",
+                    icon = Icons.Outlined.Storage,
                     modifier = Modifier.weight(1f),
                     onClick = {
                         context.startActivity(Intent(context, BookSourceActivity::class.java))
@@ -724,6 +732,7 @@ fun SettingsScreen() {
                     index = "04",
                     title = "数据",
                     description = "云同步、缓存与下载",
+                    icon = Icons.Outlined.Storage,
                     modifier = Modifier.weight(1f),
                     onClick = {
                         context.startActivity(
@@ -736,6 +745,7 @@ fun SettingsScreen() {
                     index = "05",
                     title = "系统",
                     description = "朗读、日志与关于",
+                    icon = Icons.Outlined.Settings,
                     modifier = Modifier.weight(1f),
                     onClick = {
                         context.startActivity(Intent(context, AboutActivity::class.java))
@@ -823,7 +833,8 @@ private fun SettingsCard(
     title: String,
     description: String,
     modifier: Modifier = Modifier,
-    height: androidx.compose.ui.unit.Dp = 112.dp,
+    height: androidx.compose.ui.unit.Dp = 146.dp,
+    icon: ImageVector? = null,
     onClick: () -> Unit,
 ) {
     Column(
@@ -835,11 +846,22 @@ private fun SettingsCard(
             .clickable(onClick = onClick)
             .padding(14.dp),
     ) {
-        Text(
-            text = index,
-            style = MaterialTheme.typography.labelMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                text = index,
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Spacer(Modifier.weight(1f))
+            if (icon != null) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.size(18.dp),
+                )
+            }
+        }
         Spacer(Modifier.height(10.dp))
         Text(
             text = title,
