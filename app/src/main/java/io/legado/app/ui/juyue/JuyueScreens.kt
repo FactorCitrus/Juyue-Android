@@ -28,6 +28,7 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
@@ -49,6 +50,7 @@ import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -74,9 +76,12 @@ import io.legado.app.data.appDb
 import io.legado.app.data.entities.Book
 import io.legado.app.data.entities.BookGroup
 import io.legado.app.data.entities.BookSourcePart
+import io.legado.app.data.entities.SearchBook
+import io.legado.app.model.webBook.WebBook
 import io.legado.app.ui.about.AboutActivity
 import io.legado.app.ui.about.CrashLogsDialog
 import io.legado.app.ui.book.explore.ExploreShowActivity
+import io.legado.app.ui.book.info.BookInfoActivity
 import io.legado.app.ui.book.search.SearchActivity
 import io.legado.app.ui.book.source.manage.BookSourceActivity
 import io.legado.app.ui.config.ConfigActivity
@@ -595,6 +600,26 @@ fun CategoryScreen() {
     val sources by remember {
         appDb.bookSourceDao.flowEnabledExplore()
     }.collectAsState(initial = emptyList())
+    val selected = sources.firstOrNull { it.bookSourceUrl == selectedUrl } ?: sources.firstOrNull()
+    var books by remember(selected?.bookSourceUrl) { mutableStateOf<List<SearchBook>>(emptyList()) }
+    var loading by remember(selected?.bookSourceUrl) { mutableStateOf(false) }
+    var error by remember(selected?.bookSourceUrl) { mutableStateOf<String?>(null) }
+    LaunchedEffect(selected?.bookSourceUrl) {
+        val source = selected ?: return@LaunchedEffect
+        loading = true
+        books = emptyList()
+        error = null
+        val full = withContext(Dispatchers.IO) {
+            appDb.bookSourceDao.getBookSource(source.bookSourceUrl)
+        }
+        val url = full?.exploreUrl
+        if (full != null && !url.isNullOrBlank()) {
+            runCatching {
+                withContext(Dispatchers.IO) { WebBook.exploreBookAwait(full, url, 1) }
+            }.onSuccess { books = it }.onFailure { error = it.localizedMessage }
+        }
+        loading = false
+    }
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(16.dp),
@@ -616,7 +641,6 @@ fun CategoryScreen() {
                 )
             }
         } else {
-            val selected = sources.firstOrNull { it.bookSourceUrl == selectedUrl } ?: sources.first()
             item {
                 CategorySectionLabel("SOURCE / 书源", sources.size.toString())
             }
@@ -628,7 +652,7 @@ fun CategoryScreen() {
                     sources.forEach { source ->
                         JuyueChip(
                             text = source.bookSourceName,
-                            selected = source.bookSourceUrl == selected.bookSourceUrl,
+                            selected = source.bookSourceUrl == selected?.bookSourceUrl,
                             onClick = { selectedUrl = source.bookSourceUrl },
                         )
                     }
@@ -647,7 +671,7 @@ fun CategoryScreen() {
                     modifier = Modifier
                         .fillMaxWidth()
                         .clickable {
-                            val source = selected
+                            val source = selected ?: return@clickable
                             scope.launch(Dispatchers.IO) {
                                 val full = appDb.bookSourceDao.getBookSource(source.bookSourceUrl)
                                 val exploreUrl = full?.exploreUrl
@@ -667,12 +691,12 @@ fun CategoryScreen() {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Column(Modifier.weight(1f)) {
                             Text(
-                                text = selected.bookSourceName,
+                                text = selected?.bookSourceName.orEmpty(),
                                 style = MaterialTheme.typography.headlineSmall,
                                 color = MaterialTheme.colorScheme.onSurface,
                             )
                             Text(
-                                text = selected.bookSourceGroup?.ifBlank { "未分组" } ?: "未分组",
+                                text = selected?.bookSourceGroup?.ifBlank { "未分组" } ?: "未分组",
                                 style = MaterialTheme.typography.labelMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
@@ -685,12 +709,72 @@ fun CategoryScreen() {
                     }
                 }
             }
-            item {
-                JuyueEmptyState(
-                    text = "选择分类后加载书籍；当前先进入发现页。",
-                    modifier = Modifier.fillMaxWidth(),
+            if (loading) {
+                item { JuyueEmptyState("加载书籍中…", Modifier.fillMaxWidth()) }
+            } else if (error != null) {
+                item { JuyueEmptyState(error.orEmpty(), Modifier.fillMaxWidth()) }
+            } else if (books.isEmpty()) {
+                item { JuyueEmptyState("当前书源暂无书籍", Modifier.fillMaxWidth()) }
+            } else {
+                itemsIndexed(books) { index, book ->
+                    CategoryBookCard(
+                        index = index,
+                        book = book,
+                        onClick = {
+                            context.startActivity(
+                                Intent(context, BookInfoActivity::class.java)
+                                    .putExtra("name", book.name)
+                                    .putExtra("author", book.author)
+                                    .putExtra("bookUrl", book.bookUrl)
+                            )
+                        },
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun CategoryBookCard(index: Int, book: SearchBook, onClick: () -> Unit) {
+    JuyuePanel(modifier = Modifier.fillMaxWidth().clickable(onClick = onClick)) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                text = "%02d".format(index + 1),
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.width(28.dp),
+            )
+            Box(
+                modifier = Modifier
+                    .size(width = 46.dp, height = 60.dp)
+                    .clip(RoundedCornerShape(1.dp))
+                    .background(MaterialTheme.colorScheme.surfaceVariant),
+            ) {
+                if (!book.coverUrl.isNullOrBlank()) {
+                    GlideImage(
+                        model = book.coverUrl,
+                        contentDescription = book.name,
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier.fillMaxSize(),
+                    )
+                }
+            }
+            Column(Modifier.weight(1f).padding(start = 10.dp)) {
+                Text(
+                    text = book.name,
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    maxLines = 2,
+                )
+                Text(
+                    text = "源站：${book.originName}",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
                 )
             }
+            Text("›", style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
 }
