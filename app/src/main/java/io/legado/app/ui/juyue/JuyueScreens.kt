@@ -980,14 +980,19 @@ private fun CategorySectionLabel(title: String, trailing: String) {
 fun SettingsScreen(onSubPageChange: (Boolean) -> Unit = {}) {
     val context = LocalContext.current
     var showSystem by rememberSaveable { mutableStateOf(false) }
-    androidx.compose.runtime.LaunchedEffect(showSystem) {
-        onSubPageChange(showSystem)
+    var showContentSources by rememberSaveable { mutableStateOf(false) }
+    androidx.compose.runtime.LaunchedEffect(showSystem, showContentSources) {
+        onSubPageChange(showSystem || showContentSources)
     }
     androidx.compose.runtime.DisposableEffect(Unit) {
         onDispose { onSubPageChange(false) }
     }
     if (showSystem) {
         SystemSettingsScreen(onBack = { showSystem = false })
+        return
+    }
+    if (showContentSources) {
+        ContentSourceScreen(onBack = { showContentSources = false })
         return
     }
     val bookCount by remember {
@@ -1054,9 +1059,7 @@ fun SettingsScreen(onSubPageChange: (Boolean) -> Unit = {}) {
                     icon = Icons.Outlined.Storage,
                     summary = "书源 ${sourceCount.size} / RSS ${rssCount.size}",
                     modifier = Modifier.weight(1f),
-                    onClick = {
-                        context.startActivity(Intent(context, BookSourceActivity::class.java))
-                    },
+                    onClick = { showContentSources = true },
                 )
             }
         }
