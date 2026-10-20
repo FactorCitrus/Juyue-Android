@@ -3,6 +3,7 @@
 package io.legado.app.ui.juyue
 
 import android.content.Intent
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -19,6 +20,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
@@ -26,6 +28,9 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.outlined.ArrowBack
+import androidx.compose.material.icons.outlined.MoreVert
+import androidx.compose.material.icons.outlined.CreateNewFolder
 import androidx.compose.material.icons.outlined.GridView
 import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material.icons.outlined.Share
@@ -36,20 +41,27 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.bumptech.glide.integration.compose.GlideImage
 import io.legado.app.R
 import io.legado.app.data.appDb
 import io.legado.app.data.entities.Book
 import io.legado.app.data.entities.BookGroup
 import io.legado.app.ui.about.AboutActivity
+import io.legado.app.ui.book.search.SearchActivity
 import io.legado.app.ui.book.source.manage.BookSourceActivity
 import io.legado.app.ui.config.ConfigActivity
 import io.legado.app.ui.config.ConfigTag
@@ -57,8 +69,9 @@ import io.legado.app.utils.startActivityForBook
 import kotlin.math.min
 
 @Composable
-fun BookshelfScreen() {
+fun BookshelfScreen(onBookClick: (Book) -> Unit = {}) {
     val context = LocalContext.current
+    var compactGrid by rememberSaveable { mutableStateOf(true) }
     val books by remember {
         appDb.bookDao.flowByGroup(BookGroup.IdAll)
     }.collectAsState(initial = emptyList())
@@ -70,54 +83,83 @@ fun BookshelfScreen() {
     }
 
     LazyVerticalGrid(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background),
-        columns = GridCells.Fixed(4),
-        contentPadding = PaddingValues(16.dp),
+        modifier = Modifier.fillMaxSize(),
+        columns = GridCells.Fixed(if (compactGrid) 4 else 2),
+        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {
         item(span = { GridItemSpan(maxLineSpan) }) {
-            BookshelfTopBar()
+            BookshelfTopBar(
+                onSearch = { SearchActivity.start(context, null) },
+                onShare = {
+                    val text = books.joinToString("\n") { "${it.name} · ${it.author}" }
+                    val share = Intent(Intent.ACTION_SEND).apply {
+                        type = "text/plain"
+                        putExtra(Intent.EXTRA_TEXT, text)
+                    }
+                    context.startActivity(Intent.createChooser(share, "分享书架"))
+                },
+                onToggleGrid = { compactGrid = !compactGrid },
+            )
         }
         item(span = { GridItemSpan(maxLineSpan) }) {
-            JuyuePanel(modifier = Modifier.fillMaxWidth()) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
+            JuyuePanel(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .drawWithContent {
+                        drawContent()
+                        drawRect(
+                            color = androidx.compose.ui.graphics.Color(0xFFB33A2B),
+                            size = Size(3.dp.toPx(), size.height),
+                        )
+                    }
+            ) {
+                Box(Modifier.fillMaxWidth()) {
+                    Column {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(
+                                text = "ARCHIVE / LIBRARY",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                            Spacer(Modifier.weight(1f))
+                            Text(
+                                text = "SYS.READY",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                        Row(
+                            modifier = Modifier.padding(top = 6.dp),
+                            verticalAlignment = Alignment.Bottom,
+                        ) {
+                            Text(
+                                text = "档案库",
+                                style = MaterialTheme.typography.titleLarge,
+                                color = MaterialTheme.colorScheme.onSurface,
+                            )
+                            Spacer(Modifier.weight(1f))
+                            Text(
+                                text = "${books.size} BOOKS",
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                        Text(
+                            text = "${groups.size} GROUPS · $readingCount IN PROGRESS",
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                        JuyueRule(Modifier.padding(top = 8.dp))
+                    }
                     Text(
-                        text = "ARCHIVE / LIBRARY",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                    Spacer(Modifier.weight(1f))
-                    Text(
-                        text = "SYS.READY",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        text = books.size.toString(),
+                        style = MaterialTheme.typography.titleLarge.copy(fontSize = 80.sp),
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.05f),
+                        modifier = Modifier.align(Alignment.CenterEnd),
                     )
                 }
-                Row(
-                    modifier = Modifier.padding(top = 6.dp),
-                    verticalAlignment = Alignment.Bottom,
-                ) {
-                    Text(
-                        text = "档案库",
-                        style = MaterialTheme.typography.titleLarge,
-                        color = MaterialTheme.colorScheme.onSurface,
-                    )
-                    Spacer(Modifier.weight(1f))
-                    Text(
-                        text = "${books.size} BOOKS",
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-                Text(
-                    text = "${groups.size} GROUPS · $readingCount IN PROGRESS",
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                JuyueRule(Modifier.padding(top = 8.dp))
             }
         }
         item(span = { GridItemSpan(maxLineSpan) }) {
@@ -126,7 +168,12 @@ fun BookshelfScreen() {
                 groups.take(2).forEach { group ->
                     JuyueChip(group.groupName, selected = false, onClick = {})
                 }
-                JuyueChip("新建分组", selected = false, onClick = {})
+                JuyueChip(
+                    text = "新建分组",
+                    selected = false,
+                    onClick = {},
+                    icon = Icons.Outlined.CreateNewFolder,
+                )
             }
         }
         if (books.isEmpty()) {
@@ -141,7 +188,7 @@ fun BookshelfScreen() {
                 BookshelfBookCard(
                     book = book,
                     index = index,
-                    onClick = { context.startActivityForBook(book) },
+                    onClick = { onBookClick(book) },
                 )
             }
         }
@@ -152,7 +199,11 @@ fun BookshelfScreen() {
 }
 
 @Composable
-private fun BookshelfTopBar() {
+private fun BookshelfTopBar(
+    onSearch: () -> Unit,
+    onShare: () -> Unit,
+    onToggleGrid: () -> Unit,
+) {
     Row(
         modifier = Modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically,
@@ -160,7 +211,7 @@ private fun BookshelfTopBar() {
         Image(
             painter = painterResource(R.drawable.juyue_shelf_mark),
             contentDescription = null,
-            modifier = Modifier.height(56.dp),
+            modifier = Modifier.height(64.dp),
         )
         Text(
             text = "我的书架",
@@ -175,19 +226,25 @@ private fun BookshelfTopBar() {
                 Icons.Outlined.Search,
                 contentDescription = "搜索",
                 tint = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.size(19.dp),
+                modifier = Modifier
+                    .size(17.dp)
+                    .clickable(onClick = onSearch),
             )
             Icon(
                 Icons.Outlined.Share,
                 contentDescription = "分享",
                 tint = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.size(19.dp),
+                modifier = Modifier
+                    .size(17.dp)
+                    .clickable(onClick = onShare),
             )
             Icon(
                 Icons.Outlined.GridView,
                 contentDescription = "书架布局",
                 tint = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.size(19.dp),
+                modifier = Modifier
+                    .size(17.dp)
+                    .clickable(onClick = onToggleGrid),
             )
         }
     }
@@ -200,14 +257,14 @@ private fun BookshelfBookCard(book: Book, index: Int, onClick: () -> Unit) {
         modifier = Modifier
             .fillMaxWidth()
             .background(MaterialTheme.colorScheme.surface, shape)
-            .border(1.dp, MaterialTheme.colorScheme.outline, shape)
+            .border(0.5.dp, MaterialTheme.colorScheme.outline, shape)
             .clickable(onClick = onClick)
-            .padding(6.dp),
+            .padding(5.dp),
     ) {
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .aspectRatio(0.72f)
+                .aspectRatio(0.80f)
                 .clip(shape)
                 .background(MaterialTheme.colorScheme.surfaceVariant),
         ) {
@@ -236,14 +293,14 @@ private fun BookshelfBookCard(book: Book, index: Int, onClick: () -> Unit) {
         }
         Text(
             text = "ARCHIVE %02d".format(index + 1),
-            style = MaterialTheme.typography.labelSmall,
+            style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp),
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(top = 6.dp),
             maxLines = 1,
         )
         Text(
             text = book.name,
-            style = MaterialTheme.typography.bodyMedium,
+            style = MaterialTheme.typography.bodyMedium.copy(fontSize = 12.sp),
             color = MaterialTheme.colorScheme.onSurface,
             maxLines = 2,
             modifier = Modifier.padding(top = 2.dp),
@@ -251,7 +308,7 @@ private fun BookshelfBookCard(book: Book, index: Int, onClick: () -> Unit) {
         if (book.author.isNotBlank() && book.author != "未知作者") {
             Text(
                 text = book.author,
-                style = MaterialTheme.typography.labelSmall,
+                style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp),
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 maxLines = 1,
             )
@@ -269,7 +326,7 @@ private fun BookshelfBookCard(book: Book, index: Int, onClick: () -> Unit) {
             )
             Text(
                 text = "$read/${book.totalChapterNum} CHAPT...",
-                style = MaterialTheme.typography.labelSmall,
+                style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp),
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 maxLines = 1,
                 modifier = Modifier.padding(top = 2.dp),
@@ -279,11 +336,237 @@ private fun BookshelfBookCard(book: Book, index: Int, onClick: () -> Unit) {
 }
 
 @Composable
-fun CategoryScreen() {
-    LazyColumn(
+fun BookDetailScreen(
+    book: Book,
+    onBack: () -> Unit,
+) {
+    BackHandler(onBack = onBack)
+    val context = LocalContext.current
+    Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background),
+            .background(MaterialTheme.colorScheme.background)
+            .statusBarsPadding(),
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Icon(
+                Icons.AutoMirrored.Outlined.ArrowBack,
+                contentDescription = "返回",
+                tint = MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier
+                    .size(22.dp)
+                    .clickable(onClick = onBack),
+            )
+            Text(
+                text = "书籍详情",
+                style = MaterialTheme.typography.headlineSmall,
+                color = MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(start = 12.dp),
+            )
+            Icon(
+                Icons.Outlined.MoreVert,
+                contentDescription = "更多",
+                tint = MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier.size(22.dp),
+            )
+        }
+        LazyColumn(
+            modifier = Modifier.weight(1f),
+            contentPadding = PaddingValues(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            item {
+                JuyuePanel(modifier = Modifier.fillMaxWidth()) {
+                    Row {
+                        Box(
+                            modifier = Modifier
+                                .size(width = 92.dp, height = 124.dp)
+                                .clip(RoundedCornerShape(2.dp))
+                                .background(MaterialTheme.colorScheme.surfaceVariant),
+                        ) {
+                            if (book.coverUrl.isNullOrBlank()) {
+                                Column(Modifier.padding(8.dp)) {
+                                    Text(
+                                        "NO COVER",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    )
+                                    Spacer(Modifier.height(4.dp))
+                                    Text(
+                                        book.name.take(2),
+                                        style = MaterialTheme.typography.headlineSmall,
+                                        color = MaterialTheme.colorScheme.onSurface,
+                                    )
+                                }
+                            } else {
+                                GlideImage(
+                                    model = book.coverUrl,
+                                    contentDescription = book.name,
+                                    contentScale = ContentScale.Crop,
+                                    modifier = Modifier.fillMaxSize(),
+                                )
+                            }
+                        }
+                        Column(
+                            modifier = Modifier
+                                .weight(1f)
+                                .padding(start = 12.dp),
+                        ) {
+                            Text(
+                                text = book.name,
+                                style = MaterialTheme.typography.titleLarge,
+                                color = MaterialTheme.colorScheme.onSurface,
+                            )
+                            Text(
+                                text = book.author.ifBlank { "未知作者" },
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.padding(top = 4.dp),
+                            )
+                            Text(
+                                text = book.originName.ifBlank { book.origin.ifBlank { "本地书籍" } },
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.padding(top = 6.dp),
+                            )
+                            if (book.totalChapterNum > 0) {
+                                val read = min(book.durChapterIndex + 1, book.totalChapterNum)
+                                LinearProgressIndicator(
+                                    progress = { read.toFloat() / book.totalChapterNum },
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(top = 12.dp)
+                                        .height(2.dp),
+                                    color = MaterialTheme.colorScheme.primary,
+                                    trackColor = MaterialTheme.colorScheme.outline,
+                                )
+                                Text(
+                                    text = "$read/${book.totalChapterNum} CHAPTERS",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.padding(top = 4.dp),
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+            item {
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    if (!book.kind.isNullOrBlank()) {
+                        JuyueChip(book.kind.orEmpty(), selected = false, onClick = {})
+                    }
+                    if (!book.wordCount.isNullOrBlank()) {
+                        JuyueChip("${book.wordCount} 字", selected = false, onClick = {})
+                    }
+                    JuyueChip("本地", selected = false, onClick = {})
+                }
+            }
+            item {
+                JuyuePanel(modifier = Modifier.fillMaxWidth()) {
+                    Text(
+                        text = "INTRO / 简介",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Text(
+                        text = book.getDisplayIntro().orEmpty().ifBlank { "暂无简介" },
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        modifier = Modifier.padding(top = 8.dp),
+                    )
+                }
+            }
+            item {
+                JuyuePanel(modifier = Modifier.fillMaxWidth()) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            text = "TOC / 目录",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                        Spacer(Modifier.weight(1f))
+                        Text(
+                            text = "${book.totalChapterNum} 章",
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                    Text(
+                        text = book.durChapterTitle ?: book.latestChapterTitle ?: "暂无目录",
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        modifier = Modifier.padding(top = 8.dp),
+                    )
+                }
+            }
+        }
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(MaterialTheme.colorScheme.surface)
+                .padding(horizontal = 16.dp, vertical = 10.dp),
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            DetailAction(
+                text = "已在书架",
+                primary = false,
+                modifier = Modifier.weight(1f),
+                onClick = {},
+            )
+            DetailAction(
+                text = "开始阅读",
+                primary = true,
+                modifier = Modifier.weight(1f),
+                onClick = { context.startActivityForBook(book) },
+            )
+        }
+    }
+}
+
+@Composable
+private fun DetailAction(
+    text: String,
+    primary: Boolean,
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit,
+) {
+    Box(
+        modifier = modifier
+            .height(46.dp)
+            .background(
+                if (primary) MaterialTheme.colorScheme.primary
+                else MaterialTheme.colorScheme.surface,
+                RoundedCornerShape(2.dp),
+            )
+            .border(
+                1.dp,
+                if (primary) MaterialTheme.colorScheme.primary
+                else MaterialTheme.colorScheme.outline,
+                RoundedCornerShape(2.dp),
+            )
+            .clickable(onClick = onClick),
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(
+            text = text,
+            style = MaterialTheme.typography.bodyLarge,
+            color = if (primary) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface,
+        )
+    }
+}
+
+@Composable
+fun CategoryScreen() {
+    LazyColumn(
+        modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
@@ -308,9 +591,7 @@ fun CategoryScreen() {
 fun SettingsScreen() {
     val context = LocalContext.current
     LazyColumn(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background),
+        modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {

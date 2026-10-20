@@ -26,6 +26,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.material.icons.Icons
@@ -43,7 +44,7 @@ fun JuyuePanel(
     Column(
         modifier = modifier
             .background(MaterialTheme.colorScheme.surface, PanelShape)
-            .border(1.dp, MaterialTheme.colorScheme.outline, PanelShape)
+            .border(0.5.dp, MaterialTheme.colorScheme.outline, PanelShape)
             .padding(14.dp),
         content = content,
     )
@@ -142,6 +143,7 @@ fun JuyueChip(
     text: String,
     selected: Boolean,
     onClick: () -> Unit,
+    icon: ImageVector? = null,
 ) {
     val shape = RoundedCornerShape(2.dp)
     Box(
@@ -155,11 +157,23 @@ fun JuyueChip(
             .clickable(onClick = onClick)
             .padding(horizontal = 12.dp, vertical = 6.dp)
     ) {
-        Text(
-            text = text,
-            style = MaterialTheme.typography.bodyMedium,
-            color = if (selected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface,
-        )
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            if (icon != null) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = null,
+                    tint = if (selected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier
+                        .size(14.dp)
+                        .padding(end = 4.dp),
+                )
+            }
+            Text(
+                text = text,
+                style = MaterialTheme.typography.bodyMedium,
+                color = if (selected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface,
+            )
+        }
     }
 }
 
@@ -168,18 +182,18 @@ fun JuyueBottomBar(
     selected: Int,
     onSelect: (Int) -> Unit,
 ) {
-    val shape = RoundedCornerShape(30.dp)
+    val shape = RoundedCornerShape(27.dp)
     Box(
         modifier = Modifier
             .fillMaxWidth()
             .navigationBarsPadding()
-            .padding(bottom = 6.dp),
+            .padding(bottom = 4.dp),
         contentAlignment = Alignment.Center,
     ) {
         Row(
             modifier = Modifier
-                .fillMaxWidth(0.78f)
-                .height(60.dp)
+                .fillMaxWidth(0.70f)
+                .height(54.dp)
                 .shadow(10.dp, shape)
                 .background(MaterialTheme.colorScheme.surface, shape)
                 .border(0.5.dp, MaterialTheme.colorScheme.outline, shape),
