@@ -14,7 +14,7 @@ import io.legado.app.help.config.ThemeConfig
 import io.legado.app.lib.theme.accentColor
 import io.legado.app.lib.theme.backgroundColor
 import io.legado.app.ui.book.read.ReadBookActivity
-import io.legado.app.ui.main.MainActivity
+import io.legado.app.ui.juyue.JuyueMainActivity
 import io.legado.app.utils.BitmapUtils
 import io.legado.app.utils.fullScreen
 import io.legado.app.utils.getPrefBoolean
@@ -99,7 +99,7 @@ open class WelcomeActivity : BaseActivity<ActivityWelcomeBinding>() {
     }
 
     private fun startMainActivity() {
-        startActivity<MainActivity>()
+        startActivity<JuyueMainActivity>()
         if (getPrefBoolean(PreferKey.defaultToRead) && appDb.bookDao.lastReadBook != null) {
             startActivity<ReadBookActivity>()
         }
