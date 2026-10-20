@@ -53,6 +53,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -625,44 +626,139 @@ fun CategoryScreen() {
         appDb.bookSourceDao.flowEnabledExplore()
     }.collectAsState(initial = emptyList())
     val selected = sources.firstOrNull { it.bookSourceUrl == selectedUrl } ?: sources.firstOrNull()
+    var categories by remember(selected?.bookSourceUrl) {
+        mutableStateOf<List<JuyueCategory>>(emptyList())
+    }
+    var categoryUrl by remember(selected?.bookSourceUrl) { mutableStateOf("") }
     var books by remember(selected?.bookSourceUrl) { mutableStateOf<List<SearchBook>>(emptyList()) }
+    var page by remember(selected?.bookSourceUrl) { mutableIntStateOf(1) }
     var loading by remember(selected?.bookSourceUrl) { mutableStateOf(false) }
+    var loadingMore by remember(selected?.bookSourceUrl) { mutableStateOf(false) }
     var error by remember(selected?.bookSourceUrl) { mutableStateOf<String?>(null) }
-    LaunchedEffect(selected?.bookSourceUrl) {
+    var refreshTick by remember { mutableIntStateOf(0) }
+    var importing by remember { mutableStateOf(false) }
+
+    // 解析 exploreUrl 得到分类列表，默认选「全部」或第一个可抓取分类。
+    LaunchedEffect(selected?.bookSourceUrl, refreshTick) {
         val source = selected ?: return@LaunchedEffect
-        loading = true
+        categories = emptyList()
+        categoryUrl = ""
         books = emptyList()
         error = null
         val full = withContext(Dispatchers.IO) {
             appDb.bookSourceDao.getBookSource(source.bookSourceUrl)
-        }
-        val url = full?.exploreUrl
-        if (full != null && !url.isNullOrBlank()) {
-            runCatching {
-                withContext(Dispatchers.IO) { WebBook.exploreBookAwait(full, url, 1) }
-            }.onSuccess { books = it }.onFailure { error = it.localizedMessage }
-        }
+        } ?: return@LaunchedEffect
+        val parsed = runCatching {
+            withContext(Dispatchers.IO) { parseJuyueCategories(full) }
+        }.getOrElse { emptyList() }
+        categories = parsed
+        val usable = parsed.filter { !it.url.isNullOrBlank() }
+        val target = usable.firstOrNull { it.title == "全部" } ?: usable.firstOrNull()
+        categoryUrl = target?.url
+            ?: full.exploreUrl?.takeIf {
+                it.isNotBlank() && !it.startsWith("@js:") && !it.contains("<js>")
+            }.orEmpty()
+    }
+
+    LaunchedEffect(selected?.bookSourceUrl, categoryUrl) {
+        val source = selected ?: return@LaunchedEffect
+        if (categoryUrl.isBlank()) return@LaunchedEffect
+        loading = true
+        books = emptyList()
+        error = null
+        page = 1
+        val full = withContext(Dispatchers.IO) {
+            appDb.bookSourceDao.getBookSource(source.bookSourceUrl)
+        } ?: return@LaunchedEffect
+        runCatching {
+            withContext(Dispatchers.IO) { WebBook.exploreBookAwait(full, categoryUrl, 1) }
+        }.onSuccess { books = it }
+            .onFailure { error = it.localizedMessage ?: it.toString() }
         loading = false
     }
+
+    fun loadMore() {
+        val source = selected ?: return
+        if (loadingMore || loading || categoryUrl.isBlank()) return
+        loadingMore = true
+        scope.launch {
+            val full = withContext(Dispatchers.IO) {
+                appDb.bookSourceDao.getBookSource(source.bookSourceUrl)
+            }
+            if (full != null) {
+                val next = page + 1
+                runCatching {
+                    withContext(Dispatchers.IO) { WebBook.exploreBookAwait(full, categoryUrl, next) }
+                }.onSuccess { list ->
+                    val existing = books.map { it.bookUrl }.toSet()
+                    val fresh = list.filter { it.bookUrl !in existing }
+                    if (fresh.isEmpty()) {
+                        error = "没有更多了"
+                    } else {
+                        books = books + fresh
+                        page = next
+                    }
+                }.onFailure { error = it.localizedMessage }
+            }
+            loadingMore = false
+        }
+    }
+
+    fun selectCategory(url: String?) {
+        if (url.isNullOrBlank() || url == categoryUrl) return
+        categoryUrl = url
+    }
+
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         item {
-            JuyuePageHeader(
-                kicker = "CATEGORY / SOURCES",
-                title = "分类",
-                subtitle = "书源 · 分类 · 筛选 · 下拉刷新",
-                trailing = "SOURCE ${sources.size.toString().padStart(2, '0')}",
+            CategoryHeader(
+                sourceCount = sources.size,
+                onSearch = { SearchActivity.start(context, null) },
             )
         }
         if (sources.isEmpty()) {
             item {
-                JuyueEmptyState(
-                    text = "当前没有发现源！",
-                    modifier = Modifier.fillMaxWidth(),
-                )
+                JuyuePanel(modifier = Modifier.fillMaxWidth()) {
+                    Text(
+                        text = "还没有可用的发现源。",
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onSurface,
+                    )
+                    Text(
+                        text = "可导入内置书源，或到书源管理里导入自己的规则。",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(top = 4.dp),
+                    )
+                    Row(
+                        modifier = Modifier.padding(top = 10.dp),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        JuyueChip(
+                            text = if (importing) "导入中…" else "导入内置书源",
+                            selected = true,
+                            onClick = {
+                                if (importing) return@JuyueChip
+                                importing = true
+                                scope.launch {
+                                    withContext(Dispatchers.IO) { importBundledBookSources(context) }
+                                    importing = false
+                                }
+                            },
+                        )
+                        JuyueChip(
+                            text = "书源管理",
+                            selected = false,
+                            onClick = {
+                                context.startActivity(Intent(context, BookSourceActivity::class.java))
+                            },
+                        )
+                    }
+                }
             }
         } else {
             item {
@@ -682,63 +778,62 @@ fun CategoryScreen() {
                     }
                 }
             }
-            item {
-                CategorySectionLabel("CATEGORY / 分类", "全部")
-            }
-            item {
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    JuyueChip("全部", selected = true, onClick = {})
+            val usableCategories = categories.filter { !it.url.isNullOrBlank() }
+            if (usableCategories.isNotEmpty()) {
+                item {
+                    CategorySectionLabel("CATEGORY / 分类", usableCategories.size.toString())
+                }
+                item {
+                    Row(
+                        modifier = Modifier.horizontalScroll(rememberScrollState()),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        usableCategories.forEach { category ->
+                            JuyueChip(
+                                text = category.title,
+                                selected = category.url == categoryUrl,
+                                onClick = { selectCategory(category.url) },
+                            )
+                        }
+                    }
                 }
             }
             item {
-                JuyuePanel(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable {
-                            val source = selected ?: return@clickable
-                            scope.launch(Dispatchers.IO) {
-                                val full = appDb.bookSourceDao.getBookSource(source.bookSourceUrl)
-                                val exploreUrl = full?.exploreUrl
-                                if (!exploreUrl.isNullOrBlank()) {
-                                    withContext(Dispatchers.Main) {
-                                        context.startActivity(
-                                            Intent(context, ExploreShowActivity::class.java)
-                                                .putExtra("exploreName", source.bookSourceName)
-                                                .putExtra("sourceUrl", source.bookSourceUrl)
-                                                .putExtra("exploreUrl", exploreUrl)
-                                        )
-                                    }
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    JuyueChip(
+                        text = "刷新",
+                        selected = false,
+                        onClick = { refreshTick++ },
+                    )
+                    if (selected != null) {
+                        JuyueChip(
+                            text = "旧版发现页",
+                            selected = false,
+                            onClick = {
+                                val source = selected ?: return@JuyueChip
+                                scope.launch {
+                                    val full = withContext(Dispatchers.IO) {
+                                        appDb.bookSourceDao.getBookSource(source.bookSourceUrl)
+                                    } ?: return@launch
+                                    if (full.exploreUrl.isNullOrBlank()) return@launch
+                                    context.startActivity(
+                                        Intent(context, ExploreShowActivity::class.java)
+                                            .putExtra("exploreName", full.bookSourceName)
+                                            .putExtra("sourceUrl", full.bookSourceUrl)
+                                            .putExtra("exploreUrl", full.exploreUrl)
+                                    )
                                 }
-                            }
-                        },
-                ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Column(Modifier.weight(1f)) {
-                            Text(
-                                text = selected?.bookSourceName.orEmpty(),
-                                style = MaterialTheme.typography.headlineSmall,
-                                color = MaterialTheme.colorScheme.onSurface,
-                            )
-                            Text(
-                                text = selected?.bookSourceGroup?.ifBlank { "未分组" } ?: "未分组",
-                                style = MaterialTheme.typography.labelMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                        }
-                        Text(
-                            text = "打开发现  ›",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.primary,
+                            },
                         )
                     }
                 }
             }
             if (loading) {
                 item { JuyueEmptyState("加载书籍中…", Modifier.fillMaxWidth()) }
-            } else if (error != null) {
+            } else if (error != null && books.isEmpty()) {
                 item { JuyueEmptyState(error.orEmpty(), Modifier.fillMaxWidth()) }
             } else if (books.isEmpty()) {
-                item { JuyueEmptyState("当前书源暂无书籍", Modifier.fillMaxWidth()) }
+                item { JuyueEmptyState("当前分类暂无书籍", Modifier.fillMaxWidth()) }
             } else {
                 itemsIndexed(books) { index, book ->
                     CategoryBookCard(
@@ -754,8 +849,66 @@ fun CategoryScreen() {
                         },
                     )
                 }
+                item {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { loadMore() }
+                            .padding(vertical = 10.dp),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Text(
+                            text = when {
+                                loadingMore -> "加载中…"
+                                error == "没有更多了" -> "没有更多了"
+                                else -> "加载更多"
+                            },
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.primary,
+                        )
+                    }
+                }
             }
         }
+    }
+}
+
+@Composable
+private fun CategoryHeader(sourceCount: Int, onSearch: () -> Unit) {
+    Column {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                text = "EXPLORE / SOURCES",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Spacer(Modifier.weight(1f))
+            Text(
+                text = "${sourceCount.toString().padStart(2, '0')} SOURCES",
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        Row(
+            modifier = Modifier.padding(top = 6.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                text = "分类",
+                style = MaterialTheme.typography.titleLarge.copy(fontSize = 30.sp),
+                color = MaterialTheme.colorScheme.onSurface,
+            )
+            Spacer(Modifier.weight(1f))
+            Icon(
+                Icons.Outlined.Search,
+                contentDescription = "搜索",
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier
+                    .size(19.dp)
+                    .clickable(onClick = onSearch),
+            )
+        }
+        JuyueRule(Modifier.padding(top = 8.dp))
     }
 }
 
