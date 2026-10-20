@@ -1,5 +1,13 @@
 [
   {
+    "themeName": "橘阅·月面终端",
+    "isNightTheme": false,
+    "primaryColor": "#D9D4C3",
+    "accentColor": "#B33A2B",
+    "backgroundColor": "#D9D4C3",
+    "bottomBackground": "#E7E1D1"
+  },
+  {
     "themeName": "默认",
     "isNightTheme": false,
     "primaryColor": "#795548",

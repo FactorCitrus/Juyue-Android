@@ -94,6 +94,7 @@ class BookshelfFragment1() : BaseBookshelfFragment(R.layout.fragment_bookshelf1)
             if (data != bookGroups) {
                 bookGroups.clear()
                 bookGroups.addAll(data)
+                binding.shelfHeader.tvShelfMeta.text = "${data.size} GROUPS · LOCAL LIBRARY"
                 adapter.notifyDataSetChanged()
                 selectLastTab()
                 for (i in 0 until adapter.count) {

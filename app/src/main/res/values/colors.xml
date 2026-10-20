@@ -1,9 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <color name="launcher_background">#FF1A2F5A</color>
-    <color name="primary">@color/md_light_blue_600</color>
-    <color name="primaryDark">@color/md_light_blue_700</color>
-    <color name="accent">@color/md_pink_800</color>
+    <color name="juyue_background">#FFD9D4C3</color>
+    <color name="juyue_surface">#FFE7E1D1</color>
+    <color name="juyue_elevated">#FFF1ECDE</color>
+    <color name="juyue_ink">#FF171715</color>
+    <color name="juyue_secondary_ink">#FF6F6A5E</color>
+    <color name="juyue_divider">#FF9A9485</color>
+    <color name="juyue_accent">#FFB33A2B</color>
+    <color name="juyue_on_accent">#FFF6F1E4</color>
+
+    <color name="primary">@color/juyue_background</color>
+    <color name="primaryDark">@color/juyue_background</color>
+    <color name="accent">@color/juyue_accent</color>
 
     <color name="disabled">@color/md_light_disabled</color>
 
@@ -16,10 +25,10 @@
 
     <color name="night_mask">#00000000</color>
 
-    <color name="background">@color/md_grey_50</color>
-    <color name="background_card">@color/md_grey_100</color>
-    <color name="background_menu">@color/md_grey_200</color>
-    <color name="background_prefs">#7fffffff</color>
+    <color name="background">@color/juyue_background</color>
+    <color name="background_card">@color/juyue_surface</color>
+    <color name="background_menu">@color/juyue_elevated</color>
+    <color name="background_prefs">#E6E7E1D1</color>
 
     <color name="transparent">#00000000</color>
 

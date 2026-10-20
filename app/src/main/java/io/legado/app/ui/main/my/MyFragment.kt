@@ -5,7 +5,12 @@ import android.os.Bundle
 import android.view.Menu
 import android.view.MenuItem
 import android.view.View
+import android.view.ViewGroup
 import androidx.preference.Preference
+import androidx.recyclerview.widget.ConcatAdapter
+import androidx.recyclerview.widget.RecyclerView
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
 import io.legado.app.R
 import io.legado.app.base.BaseFragment
 import io.legado.app.constant.EventBus
@@ -53,6 +58,17 @@ class MyFragment() : BaseFragment(R.layout.fragment_my_config), MainFragmentInte
     private val binding by viewBinding(FragmentMyConfigBinding::bind)
 
     override fun onFragmentCreated(view: View, savedInstanceState: Bundle?) {
+        ViewCompat.setOnApplyWindowInsetsListener(view) { target, insets ->
+            val top = insets.getInsets(WindowInsetsCompat.Type.statusBars()).top
+            target.setPadding(
+                target.paddingLeft,
+                top,
+                target.paddingRight,
+                target.paddingBottom
+            )
+            insets
+        }
+        ViewCompat.requestApplyInsets(view)
         setSupportToolbar(binding.titleBar.toolbar)
         val fragmentTag = "prefFragment"
         var preferenceFragment = childFragmentManager.findFragmentByTag(fragmentTag)
@@ -113,6 +129,48 @@ class MyFragment() : BaseFragment(R.layout.fragment_my_config), MainFragmentInte
         override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
             super.onViewCreated(view, savedInstanceState)
             listView.setEdgeEffectColor(primaryColor)
+            val header = layoutInflater.inflate(R.layout.view_settings_header, listView, false)
+            header.findViewById<View>(R.id.card_read).setOnClickListener {
+                startActivity<ConfigActivity> {
+                    putExtra("configTag", ConfigTag.OTHER_CONFIG)
+                }
+            }
+            header.findViewById<View>(R.id.card_display).setOnClickListener {
+                startActivity<ConfigActivity> {
+                    putExtra("configTag", ConfigTag.THEME_CONFIG)
+                }
+            }
+            header.findViewById<View>(R.id.card_sources).setOnClickListener {
+                startActivity<BookSourceActivity>()
+            }
+            header.findViewById<View>(R.id.card_data).setOnClickListener {
+                startActivity<ConfigActivity> {
+                    putExtra("configTag", ConfigTag.BACKUP_CONFIG)
+                }
+            }
+            header.findViewById<View>(R.id.card_system).setOnClickListener {
+                startActivity<AboutActivity>()
+            }
+            listView.adapter = ConcatAdapter(
+                SettingsHeaderAdapter(header),
+                listView.adapter
+            )
+        }
+
+        private class SettingsHeaderAdapter(
+            private val header: View
+        ) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
+
+            override fun onCreateViewHolder(
+                parent: ViewGroup,
+                viewType: Int
+            ): RecyclerView.ViewHolder {
+                return object : RecyclerView.ViewHolder(header) {}
+            }
+
+            override fun getItemCount() = 1
+
+            override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) = Unit
         }
 
         override fun onResume() {

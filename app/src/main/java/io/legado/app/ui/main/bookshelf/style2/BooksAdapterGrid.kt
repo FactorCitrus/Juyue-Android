@@ -16,6 +16,7 @@ import io.legado.app.utils.gone
 import io.legado.app.utils.invisible
 import io.legado.app.utils.visible
 import splitties.views.onLongClick
+import kotlin.math.min
 
 @Suppress("UNUSED_PARAMETER")
 class BooksAdapterGrid(context: Context, callBack: CallBack) :
@@ -74,11 +75,26 @@ class BooksAdapterGrid(context: Context, callBack: CallBack) :
         RecyclerView.ViewHolder(binding.root) {
 
         fun onBind(item: Book, position: Int) = binding.run {
+            tvArchive.text = String.format("ARCHIVE %02d", position + 1)
             if (showBookname == 1) {
                 tvName.gone()
             } else {
                 tvName.visible()
                 tvName.text = item.name
+            }
+            tvAuthor.text = item.author
+            tvAuthor.visible(item.author.isNotBlank() && item.author != "未知作者")
+            if (item.totalChapterNum > 0) {
+                val read = min(item.durChapterIndex + 1, item.totalChapterNum)
+                pbProgress.visible()
+                pbProgress.max = item.totalChapterNum
+                pbProgress.progress = read
+                tvProgress.visible()
+                tvProgress.text = "$read/${item.totalChapterNum} CHAPTERS"
+            } else {
+                pbProgress.gone()
+                tvProgress.visible(item.durChapterTitle?.isNotBlank() == true)
+                tvProgress.text = item.durChapterTitle.orEmpty()
             }
             ivCover.load(item, false)
             upRefresh(this, item)

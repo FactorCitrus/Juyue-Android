@@ -315,13 +315,13 @@ object ThemeConfig {
 
     private fun getDayTheme(context: Context, name: String): Config {
         val primary =
-            context.getPrefInt(PreferKey.cPrimary, context.getCompatColor(R.color.md_brown_500))
+            context.getPrefInt(PreferKey.cPrimary, context.getCompatColor(R.color.juyue_background))
         val accent =
-            context.getPrefInt(PreferKey.cAccent, context.getCompatColor(R.color.md_red_600))
+            context.getPrefInt(PreferKey.cAccent, context.getCompatColor(R.color.juyue_accent))
         val background =
-            context.getPrefInt(PreferKey.cBackground, context.getCompatColor(R.color.md_grey_100))
+            context.getPrefInt(PreferKey.cBackground, context.getCompatColor(R.color.juyue_background))
         val bBackground =
-            context.getPrefInt(PreferKey.cBBackground, context.getCompatColor(R.color.md_grey_200))
+            context.getPrefInt(PreferKey.cBBackground, context.getCompatColor(R.color.juyue_surface))
         val transparentNavBar =
             context.getPrefBoolean(PreferKey.tNavBar, false)
         val bgImgPath =
@@ -427,17 +427,17 @@ object ThemeConfig {
 
             else -> {
                 val primary =
-                    getPrefInt(PreferKey.cPrimary, getCompatColor(R.color.md_brown_500))
+                    getPrefInt(PreferKey.cPrimary, getCompatColor(R.color.juyue_background))
                 val accent =
-                    getPrefInt(PreferKey.cAccent, getCompatColor(R.color.md_red_600))
+                    getPrefInt(PreferKey.cAccent, getCompatColor(R.color.juyue_accent))
                 var background =
-                    getPrefInt(PreferKey.cBackground, getCompatColor(R.color.md_grey_100))
+                    getPrefInt(PreferKey.cBackground, getCompatColor(R.color.juyue_background))
                 if (!ColorUtils.isColorLight(background)) {
-                    background = getCompatColor(R.color.md_grey_100)
+                    background = getCompatColor(R.color.juyue_background)
                     putPrefInt(PreferKey.cBackground, background)
                 }
                 val bBackground =
-                    getPrefInt(PreferKey.cBBackground, getCompatColor(R.color.md_grey_200))
+                    getPrefInt(PreferKey.cBBackground, getCompatColor(R.color.juyue_surface))
                 val transparentNavBar =
                     getPrefBoolean(PreferKey.tNavBar, false)
                 ThemeStore.editTheme(this)

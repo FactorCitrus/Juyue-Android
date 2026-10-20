@@ -538,8 +538,8 @@ object ReadBookConfig {
     @Keep
     data class Config(
         var name: String = "",
-        var bgStr: String = "#EEEEEE",//白天背景
-        var bgStrNight: String = "#000000",//夜间背景
+        var bgStr: String = "#D9D4C3",//白天背景
+        var bgStrNight: String = "#191A18",//夜间背景
         var bgStrEInk: String = "#FFFFFF",//EInk背景
         var bgAlpha: Int = 100,//背景透明度
         var bgType: Int = 0,//白天背景类型 0:颜色, 1:assets图片, 2其它图片
@@ -548,17 +548,17 @@ object ReadBookConfig {
         private var darkStatusIcon: Boolean = true,//白天是否暗色状态栏
         private var darkStatusIconNight: Boolean = false,//晚上是否暗色状态栏
         private var darkStatusIconEInk: Boolean = true,
-        private var textColor: String = "#3E3D3B",//白天文字颜色
-        private var textColorNight: String = "#ADADAD",//夜间文字颜色
+        private var textColor: String = "#171715",//白天文字颜色
+        private var textColorNight: String = "#E9E1D2",//夜间文字颜色
         private var textColorEInk: String = "#000000",
-        private var textAccentColor: String = "#E53935",//白天强调文字颜色
-        private var textAccentColorNight: String = "#FE4D55",//夜间强调文字颜色
+        private var textAccentColor: String = "#B33A2B",//白天强调文字颜色
+        private var textAccentColorNight: String = "#D05A49",//夜间强调文字颜色
         private var textAccentColorEInk: String = "#000000",
         private var pageAnim: Int = 0,//翻页动画
         private var pageAnimEInk: Int = 4,
         var textFont: String = "",//字体
         var textBold: Int = 0,//是否粗体字 0:正常, 1:粗体, 2:细体
-        var textSize: Int = 20,//文字大小
+        var textSize: Int = 18,//文字大小
         var letterSpacing: Float = 0.1f,//字间距
         var lineSpacingExtra: Int = 12,//行间距
         var paragraphSpacing: Int = 2,//段距

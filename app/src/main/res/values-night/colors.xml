@@ -1,14 +1,23 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="primary">@color/md_blue_grey_600</color>
-    <color name="primaryDark">@color/md_blue_grey_700</color>
-    <color name="accent">@color/md_deep_orange_800</color>
+    <color name="juyue_background">#FF191A18</color>
+    <color name="juyue_surface">#FF232420</color>
+    <color name="juyue_elevated">#FF2B2C27</color>
+    <color name="juyue_ink">#FFE9E1D2</color>
+    <color name="juyue_secondary_ink">#FF9C9588</color>
+    <color name="juyue_divider">#FF4A4841</color>
+    <color name="juyue_accent">#FFD05A49</color>
+    <color name="juyue_on_accent">#FF191A18</color>
+
+    <color name="primary">@color/juyue_background</color>
+    <color name="primaryDark">@color/juyue_background</color>
+    <color name="accent">@color/juyue_accent</color>
 
     <color name="disabled">@color/md_dark_disabled</color>
 
-    <color name="background">@color/md_grey_900</color>
-    <color name="background_card">@color/md_grey_850</color>
-    <color name="background_menu">@color/md_grey_800</color>
+    <color name="background">@color/juyue_background</color>
+    <color name="background_card">@color/juyue_surface</color>
+    <color name="background_menu">@color/juyue_elevated</color>
     <color name="background_prefs">#10303030</color>
 
     <color name="night_mask">#69000000</color>
