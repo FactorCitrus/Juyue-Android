@@ -24,12 +24,13 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.outlined.MenuBook
 import androidx.compose.material.icons.outlined.GridView
-import androidx.compose.material.icons.outlined.MenuBook
 import androidx.compose.material.icons.outlined.Settings
 
 private val PanelShape = RoundedCornerShape(2.dp)
@@ -167,20 +168,21 @@ fun JuyueBottomBar(
     selected: Int,
     onSelect: (Int) -> Unit,
 ) {
-    Column(
+    val shape = RoundedCornerShape(30.dp)
+    Box(
         modifier = Modifier
             .fillMaxWidth()
-            .background(MaterialTheme.colorScheme.surface)
             .navigationBarsPadding()
+            .padding(bottom = 6.dp),
+        contentAlignment = Alignment.Center,
     ) {
-        HorizontalDivider(
-            thickness = 0.5.dp,
-            color = MaterialTheme.colorScheme.outline,
-        )
         Row(
             modifier = Modifier
-                .fillMaxWidth()
-                .height(58.dp),
+                .fillMaxWidth(0.78f)
+                .height(60.dp)
+                .shadow(10.dp, shape)
+                .background(MaterialTheme.colorScheme.surface, shape)
+                .border(0.5.dp, MaterialTheme.colorScheme.outline, shape),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             JuyueBottomItem(0, "书架", selected, onSelect)
@@ -208,7 +210,7 @@ private fun RowScope.JuyueBottomItem(
     ) {
         Icon(
             imageVector = when (index) {
-                0 -> Icons.Outlined.MenuBook
+                0 -> Icons.AutoMirrored.Outlined.MenuBook
                 1 -> Icons.Outlined.GridView
                 else -> Icons.Outlined.Settings
             },

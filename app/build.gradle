@@ -264,6 +264,7 @@ dependencies {
 
     //Glide
     implementation(libs.glide.glide)
+    implementation(libs.glide.compose)
     implementation(libs.glide.okhttp)
     ksp(libs.glide.ksp)
 
