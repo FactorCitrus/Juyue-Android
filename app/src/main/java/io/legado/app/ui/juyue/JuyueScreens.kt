@@ -371,6 +371,13 @@ fun BookDetailScreen(
 ) {
     BackHandler(onBack = onBack)
     val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    var inShelf by remember(book.bookUrl) { mutableStateOf<Boolean?>(null) }
+    LaunchedEffect(book.bookUrl) {
+        inShelf = withContext(Dispatchers.IO) {
+            appDb.bookDao.getBook(book.bookUrl) != null
+        }
+    }
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -544,11 +551,28 @@ fun BookDetailScreen(
                 .padding(horizontal = 16.dp, vertical = 10.dp),
             horizontalArrangement = Arrangement.spacedBy(10.dp),
         ) {
+            val shelfState = inShelf
             DetailAction(
-                text = "已在书架",
+                text = when (shelfState) {
+                    null -> "检查书架…"
+                    true -> "移出书架"
+                    false -> "加入书架"
+                },
                 primary = false,
                 modifier = Modifier.weight(1f),
-                onClick = {},
+                onClick = {
+                    if (shelfState == null) return@DetailAction
+                    scope.launch {
+                        withContext(Dispatchers.IO) {
+                            if (shelfState) {
+                                appDb.bookDao.delete(book)
+                            } else {
+                                appDb.bookDao.insert(book)
+                            }
+                        }
+                        inShelf = !shelfState
+                    }
+                },
             )
             DetailAction(
                 text = "开始阅读",
@@ -799,6 +823,11 @@ private fun CategorySectionLabel(title: String, trailing: String) {
 @Composable
 fun SettingsScreen() {
     val context = LocalContext.current
+    var showSystem by rememberSaveable { mutableStateOf(false) }
+    if (showSystem) {
+        SystemSettingsScreen(onBack = { showSystem = false })
+        return
+    }
     val bookCount by remember {
         appDb.bookDao.flowAll()
     }.collectAsState(initial = emptyList())
@@ -892,9 +921,7 @@ fun SettingsScreen() {
                     icon = Icons.Outlined.Settings,
                     summary = "v${BuildConfig.VERSION_NAME.removeSuffix("debug")} / 5 MODULES",
                     modifier = Modifier.weight(1f),
-                    onClick = {
-                        context.startActivity(Intent(context, AboutActivity::class.java))
-                    },
+                onClick = { showSystem = true },
                 )
             }
         }

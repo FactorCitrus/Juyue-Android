@@ -61,6 +61,11 @@ private fun JuyueApp() {
         )
         return
     }
+    var unlocked by remember { mutableStateOf(LocalConfig.password.isNullOrBlank()) }
+    if (!unlocked) {
+        JuyueUnlockScreen(onUnlock = { unlocked = true })
+        return
+    }
     var selected by rememberSaveable { mutableIntStateOf(0) }
     var detailBook by remember { mutableStateOf<Book?>(null) }
     detailBook?.let { book ->
