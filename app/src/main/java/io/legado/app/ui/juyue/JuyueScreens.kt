@@ -974,9 +974,15 @@ private fun CategorySectionLabel(title: String, trailing: String) {
 }
 
 @Composable
-fun SettingsScreen() {
+fun SettingsScreen(onSubPageChange: (Boolean) -> Unit = {}) {
     val context = LocalContext.current
     var showSystem by rememberSaveable { mutableStateOf(false) }
+    androidx.compose.runtime.LaunchedEffect(showSystem) {
+        onSubPageChange(showSystem)
+    }
+    androidx.compose.runtime.DisposableEffect(Unit) {
+        onDispose { onSubPageChange(false) }
+    }
     if (showSystem) {
         SystemSettingsScreen(onBack = { showSystem = false })
         return

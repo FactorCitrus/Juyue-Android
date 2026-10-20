@@ -67,6 +67,7 @@ private fun JuyueApp() {
         return
     }
     var selected by rememberSaveable { mutableIntStateOf(0) }
+    var settingsSubPage by remember { mutableStateOf(false) }
     var detailBook by remember { mutableStateOf<Book?>(null) }
     detailBook?.let { book ->
         BookDetailScreen(book = book, onBack = { detailBook = null })
@@ -76,7 +77,9 @@ private fun JuyueApp() {
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
         bottomBar = {
-            JuyueBottomBar(selected = selected, onSelect = { selected = it })
+            if (!(selected == 2 && settingsSubPage)) {
+                JuyueBottomBar(selected = selected, onSelect = { selected = it })
+            }
         },
     ) { padding ->
         Box(
@@ -103,7 +106,7 @@ private fun JuyueApp() {
             when (selected) {
                 0 -> BookshelfScreen(onBookClick = { detailBook = it })
                 1 -> CategoryScreen()
-                else -> SettingsScreen()
+                else -> SettingsScreen(onSubPageChange = { settingsSubPage = it })
             }
         }
     }
