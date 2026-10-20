@@ -32,6 +32,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.MenuBook
 import androidx.compose.material.icons.outlined.GridView
@@ -42,13 +44,14 @@ private val PanelShape = RoundedCornerShape(2.dp)
 @Composable
 fun JuyuePanel(
     modifier: Modifier = Modifier,
+    contentPadding: Dp = 14.dp,
     content: @Composable ColumnScope.() -> Unit,
 ) {
     Column(
         modifier = modifier
             .background(MaterialTheme.colorScheme.surface, PanelShape)
             .border(0.5.dp, MaterialTheme.colorScheme.outline, PanelShape)
-            .padding(14.dp),
+            .padding(contentPadding),
         content = content,
     )
 }
@@ -93,6 +96,7 @@ fun JuyuePageHeader(
 ) {
     val accent = MaterialTheme.colorScheme.primary
     JuyuePanel(
+        contentPadding = 16.dp,
         modifier = modifier
             .fillMaxWidth()
             .drawWithContent {
@@ -100,7 +104,7 @@ fun JuyuePageHeader(
                 val inset = 14.dp.toPx()
                 drawRect(
                     color = accent,
-                    topLeft = Offset(8.dp.toPx(), inset),
+                    topLeft = Offset(6.dp.toPx(), inset),
                     size = Size(3.dp.toPx(), size.height - inset * 2),
                 )
             }
@@ -111,7 +115,7 @@ fun JuyuePageHeader(
         ) {
             Text(
                 text = kicker,
-                style = MaterialTheme.typography.labelSmall,
+                style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             Spacer(Modifier.weight(1f))
@@ -125,9 +129,9 @@ fun JuyuePageHeader(
         }
         Text(
             text = title,
-            style = MaterialTheme.typography.titleLarge,
+            style = MaterialTheme.typography.titleLarge.copy(fontSize = 30.sp, lineHeight = 36.sp),
             color = MaterialTheme.colorScheme.onSurface,
-            modifier = Modifier.padding(top = 6.dp),
+            modifier = Modifier.padding(top = 10.dp),
         )
         Text(
             text = subtitle,
@@ -135,8 +139,9 @@ fun JuyuePageHeader(
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.padding(top = 10.dp),
         )
-        JuyueRule(Modifier.padding(top = 8.dp))
+        JuyueRule(Modifier.padding(top = 10.dp))
     }
 }
 
