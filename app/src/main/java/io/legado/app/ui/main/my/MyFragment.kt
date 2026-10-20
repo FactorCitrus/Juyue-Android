@@ -34,6 +34,9 @@ import io.legado.app.ui.dict.rule.DictRuleActivity
 import io.legado.app.ui.file.FileManageActivity
 import io.legado.app.ui.main.MainFragmentInterface
 import io.legado.app.ui.replace.ReplaceRuleActivity
+import io.legado.app.ui.rss.article.RssSortActivity
+import io.legado.app.ui.rss.source.manage.RssSourceActivity
+import io.legado.app.ui.rss.subscription.RuleSubActivity
 import io.legado.app.utils.LogUtils
 import io.legado.app.utils.getPrefBoolean
 import io.legado.app.utils.observeEventSticky
@@ -141,7 +144,16 @@ class MyFragment() : BaseFragment(R.layout.fragment_my_config), MainFragmentInte
                 }
             }
             header.findViewById<View>(R.id.card_sources).setOnClickListener {
-                startActivity<BookSourceActivity>()
+                context?.selector(
+                    arrayListOf("书源管理", "RSS 订阅源", "订阅文章", "规则订阅")
+                ) { _, index ->
+                    when (index) {
+                        0 -> startActivity<BookSourceActivity>()
+                        1 -> startActivity<RssSourceActivity>()
+                        2 -> startActivity<RssSortActivity>()
+                        3 -> startActivity<RuleSubActivity>()
+                    }
+                }
             }
             header.findViewById<View>(R.id.card_data).setOnClickListener {
                 startActivity<ConfigActivity> {

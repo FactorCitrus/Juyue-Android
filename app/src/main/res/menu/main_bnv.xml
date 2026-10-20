@@ -5,19 +5,15 @@
 
     <item
         android:id="@+id/menu_bookshelf"
-        android:icon="@drawable/ic_bottom_books"
+        android:icon="@drawable/ic_bottom_books_mono"
         android:title="@string/bookshelf" />
     <item
         android:id="@+id/menu_discovery"
-        android:icon="@drawable/ic_bottom_explore"
-        android:title="@string/discovery" />
-    <item
-        android:id="@+id/menu_rss"
-        android:icon="@drawable/ic_bottom_rss_feed"
-        android:title="@string/rss" />
+        android:icon="@drawable/ic_bottom_grid"
+        android:title="分类" />
     <item
         android:id="@+id/menu_my_config"
-        android:icon="@drawable/ic_bottom_person"
-        android:title="@string/my" />
+        android:icon="@drawable/ic_settings"
+        android:title="设置" />
 
 </menu>
