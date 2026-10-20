@@ -981,8 +981,9 @@ fun SettingsScreen(onSubPageChange: (Boolean) -> Unit = {}) {
     val context = LocalContext.current
     var showSystem by rememberSaveable { mutableStateOf(false) }
     var showContentSources by rememberSaveable { mutableStateOf(false) }
-    androidx.compose.runtime.LaunchedEffect(showSystem, showContentSources) {
-        onSubPageChange(showSystem || showContentSources)
+    var showData by rememberSaveable { mutableStateOf(false) }
+    androidx.compose.runtime.LaunchedEffect(showSystem, showContentSources, showData) {
+        onSubPageChange(showSystem || showContentSources || showData)
     }
     androidx.compose.runtime.DisposableEffect(Unit) {
         onDispose { onSubPageChange(false) }
@@ -993,6 +994,10 @@ fun SettingsScreen(onSubPageChange: (Boolean) -> Unit = {}) {
     }
     if (showContentSources) {
         ContentSourceScreen(onBack = { showContentSources = false })
+        return
+    }
+    if (showData) {
+        DataSettingsScreen(onBack = { showData = false })
         return
     }
     val bookCount by remember {
@@ -1072,12 +1077,7 @@ fun SettingsScreen(onSubPageChange: (Boolean) -> Unit = {}) {
                     icon = Icons.Outlined.Storage,
                     summary = "WebDAV ${if (AppWebDav.isOk) "已配置" else "未配置"}",
                     modifier = Modifier.weight(1f),
-                    onClick = {
-                        context.startActivity(
-                            Intent(context, ConfigActivity::class.java)
-                                .putExtra("configTag", ConfigTag.BACKUP_CONFIG)
-                        )
-                    },
+                    onClick = { showData = true },
                 )
                 SettingsCard(
                     index = "05",
