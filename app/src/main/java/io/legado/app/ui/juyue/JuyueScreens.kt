@@ -66,6 +66,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.bumptech.glide.integration.compose.GlideImage
 import io.legado.app.R
+import io.legado.app.BuildConfig
 import io.legado.app.data.appDb
 import io.legado.app.data.entities.Book
 import io.legado.app.data.entities.BookGroup
@@ -79,7 +80,11 @@ import io.legado.app.ui.config.ConfigActivity
 import io.legado.app.ui.config.ConfigTag
 import io.legado.app.utils.startActivityForBook
 import io.legado.app.help.AppWebDav
+import io.legado.app.help.config.ReadBookConfig
 import kotlin.math.min
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -101,7 +106,7 @@ fun BookshelfScreen(onBookClick: (Book) -> Unit = {}) {
     LazyVerticalGrid(
         modifier = Modifier.fillMaxSize(),
         columns = GridCells.Fixed(if (compactGrid) 4 else 2),
-        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+        contentPadding = PaddingValues(start = 16.dp, top = 0.dp, end = 16.dp, bottom = 4.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
@@ -671,9 +676,15 @@ fun SettingsScreen() {
     val sourceCount by remember {
         appDb.bookSourceDao.flowAll()
     }.collectAsState(initial = emptyList())
+    val rssCount by remember {
+        appDb.rssSourceDao.flowAll()
+    }.collectAsState(initial = emptyList())
+    val buildTime = remember {
+        SimpleDateFormat("MM-dd HH:mm", Locale.CHINA).format(Date())
+    }
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(16.dp),
+        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
         verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {
         item {
@@ -691,6 +702,7 @@ fun SettingsScreen() {
                 description = "字号、行距、背景与净化",
                 height = 132.dp,
                 icon = Icons.Outlined.MenuBook,
+                summary = "字号 ${ReadBookConfig.durConfig.textSize} / 行距 ${ReadBookConfig.durConfig.lineSpacingExtra}",
                 onClick = {
                     context.startActivity(
                         Intent(context, ConfigActivity::class.java)
@@ -706,6 +718,7 @@ fun SettingsScreen() {
                     title = "外观",
                     description = "主题、图标与书架外观",
                     icon = Icons.Outlined.Palette,
+                    summary = "月面终端 / 标准",
                     modifier = Modifier.weight(1f),
                     onClick = {
                         context.startActivity(
@@ -719,6 +732,7 @@ fun SettingsScreen() {
                     title = "内容源",
                     description = "书源、OPDS、RSS 与订阅",
                     icon = Icons.Outlined.Storage,
+                    summary = "书源 ${sourceCount.size} / RSS ${rssCount.size}",
                     modifier = Modifier.weight(1f),
                     onClick = {
                         context.startActivity(Intent(context, BookSourceActivity::class.java))
@@ -733,6 +747,7 @@ fun SettingsScreen() {
                     title = "数据",
                     description = "云同步、缓存与下载",
                     icon = Icons.Outlined.Storage,
+                    summary = "WebDAV ${if (AppWebDav.isOk) "已配置" else "未配置"}",
                     modifier = Modifier.weight(1f),
                     onClick = {
                         context.startActivity(
@@ -746,6 +761,7 @@ fun SettingsScreen() {
                     title = "系统",
                     description = "朗读、日志与关于",
                     icon = Icons.Outlined.Settings,
+                    summary = "v${BuildConfig.VERSION_NAME.removeSuffix("debug")} / 5 MODULES",
                     modifier = Modifier.weight(1f),
                     onClick = {
                         context.startActivity(Intent(context, AboutActivity::class.java))
@@ -758,6 +774,7 @@ fun SettingsScreen() {
                 bookCount = bookCount.size,
                 sourceCount = sourceCount.size,
                 webDavConfigured = AppWebDav.isOk,
+                buildTime = buildTime,
                 onDiagnostics = {
                     if (context is FragmentActivity) {
                         CrashLogsDialog().show(context.supportFragmentManager, "CrashLogs")
@@ -773,6 +790,7 @@ private fun SettingsFooter(
     bookCount: Int,
     sourceCount: Int,
     webDavConfigured: Boolean,
+    buildTime: String,
     onDiagnostics: () -> Unit,
 ) {
     JuyuePanel(modifier = Modifier.fillMaxWidth()) {
@@ -806,7 +824,7 @@ private fun SettingsFooter(
         ) {
             Column {
                 Text(
-                    text = "v4.7.10.4",
+                    text = "${BuildConfig.VERSION_NAME.removeSuffix("debug")} (${BuildConfig.VERSION_NAME.removeSuffix("debug")}) · $buildTime",
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurface,
                 )
@@ -835,43 +853,66 @@ private fun SettingsCard(
     modifier: Modifier = Modifier,
     height: androidx.compose.ui.unit.Dp = 146.dp,
     icon: ImageVector? = null,
+    summary: String? = null,
     onClick: () -> Unit,
 ) {
-    Column(
+    Box(
         modifier = modifier
             .fillMaxWidth()
             .height(height)
             .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(2.dp))
             .border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(2.dp))
-            .clickable(onClick = onClick)
-            .padding(14.dp),
+            .clickable(onClick = onClick),
     ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(14.dp),
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = index,
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Spacer(Modifier.weight(1f))
+                if (icon != null) {
+                    Icon(
+                        imageVector = icon,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.size(18.dp),
+                    )
+                }
+            }
+            Spacer(Modifier.weight(1f))
             Text(
-                text = index,
-                style = MaterialTheme.typography.labelMedium,
+                text = title,
+                style = MaterialTheme.typography.headlineSmall,
+                color = MaterialTheme.colorScheme.onSurface,
+            )
+            Text(
+                text = description,
+                style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
-            Spacer(Modifier.weight(1f))
-            if (icon != null) {
-                Icon(
-                    imageVector = icon,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.size(18.dp),
+            if (summary != null) {
+                Text(
+                    text = summary,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    modifier = Modifier.padding(top = 2.dp),
                 )
             }
         }
-        Spacer(Modifier.height(10.dp))
         Text(
-            text = title,
-            style = MaterialTheme.typography.headlineSmall,
-            color = MaterialTheme.colorScheme.onSurface,
-        )
-        Text(
-            text = description,
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            text = index,
+            style = MaterialTheme.typography.titleLarge.copy(fontSize = 38.sp),
+            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.05f),
+            modifier = Modifier
+                .align(Alignment.BottomEnd)
+                .padding(8.dp),
         )
     }
 }

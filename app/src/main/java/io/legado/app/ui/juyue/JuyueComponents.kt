@@ -193,7 +193,7 @@ fun JuyueBottomBar(
         Row(
             modifier = Modifier
                 .fillMaxWidth(0.70f)
-                .height(54.dp)
+                .height(56.dp)
                 .shadow(10.dp, shape)
                 .background(MaterialTheme.colorScheme.surface, shape)
                 .border(0.5.dp, MaterialTheme.colorScheme.outline, shape),
