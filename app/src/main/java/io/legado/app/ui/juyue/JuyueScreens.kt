@@ -9,6 +9,8 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -589,6 +591,7 @@ private fun DetailAction(
 fun CategoryScreen() {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
+    var selectedUrl by rememberSaveable { mutableStateOf("") }
     val sources by remember {
         appDb.bookSourceDao.flowEnabledExplore()
     }.collectAsState(initial = emptyList())
@@ -613,25 +616,79 @@ fun CategoryScreen() {
                 )
             }
         } else {
-            items(sources, key = { it.bookSourceUrl }) { source ->
-                CategorySourceCard(
-                    source = source,
-                    onClick = {
-                        scope.launch(Dispatchers.IO) {
-                            val full = appDb.bookSourceDao.getBookSource(source.bookSourceUrl)
-                            val exploreUrl = full?.exploreUrl
-                            if (!exploreUrl.isNullOrBlank()) {
-                                withContext(Dispatchers.Main) {
-                                    context.startActivity(
-                                        Intent(context, ExploreShowActivity::class.java)
-                                            .putExtra("exploreName", source.bookSourceName)
-                                            .putExtra("sourceUrl", source.bookSourceUrl)
-                                            .putExtra("exploreUrl", exploreUrl)
-                                    )
+            val selected = sources.firstOrNull { it.bookSourceUrl == selectedUrl } ?: sources.first()
+            item {
+                CategorySectionLabel("SOURCE / 书源", sources.size.toString())
+            }
+            item {
+                Row(
+                    modifier = Modifier.horizontalScroll(rememberScrollState()),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    sources.forEach { source ->
+                        JuyueChip(
+                            text = source.bookSourceName,
+                            selected = source.bookSourceUrl == selected.bookSourceUrl,
+                            onClick = { selectedUrl = source.bookSourceUrl },
+                        )
+                    }
+                }
+            }
+            item {
+                CategorySectionLabel("CATEGORY / 分类", "全部")
+            }
+            item {
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    JuyueChip("全部", selected = true, onClick = {})
+                }
+            }
+            item {
+                JuyuePanel(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable {
+                            val source = selected
+                            scope.launch(Dispatchers.IO) {
+                                val full = appDb.bookSourceDao.getBookSource(source.bookSourceUrl)
+                                val exploreUrl = full?.exploreUrl
+                                if (!exploreUrl.isNullOrBlank()) {
+                                    withContext(Dispatchers.Main) {
+                                        context.startActivity(
+                                            Intent(context, ExploreShowActivity::class.java)
+                                                .putExtra("exploreName", source.bookSourceName)
+                                                .putExtra("sourceUrl", source.bookSourceUrl)
+                                                .putExtra("exploreUrl", exploreUrl)
+                                        )
+                                    }
                                 }
                             }
+                        },
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Column(Modifier.weight(1f)) {
+                            Text(
+                                text = selected.bookSourceName,
+                                style = MaterialTheme.typography.headlineSmall,
+                                color = MaterialTheme.colorScheme.onSurface,
+                            )
+                            Text(
+                                text = selected.bookSourceGroup?.ifBlank { "未分组" } ?: "未分组",
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
                         }
-                    },
+                        Text(
+                            text = "打开发现  ›",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.primary,
+                        )
+                    }
+                }
+            }
+            item {
+                JuyueEmptyState(
+                    text = "选择分类后加载书籍；当前先进入发现页。",
+                    modifier = Modifier.fillMaxWidth(),
                 )
             }
         }
@@ -639,31 +696,18 @@ fun CategoryScreen() {
 }
 
 @Composable
-private fun CategorySourceCard(source: BookSourcePart, onClick: () -> Unit) {
-    JuyuePanel(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick),
-    ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(
-                text = source.bookSourceName,
-                style = MaterialTheme.typography.headlineSmall,
-                color = MaterialTheme.colorScheme.onSurface,
-                modifier = Modifier.weight(1f),
-            )
-            Text(
-                text = if (source.hasExploreUrl) "DISCOVER" else "NO RULE",
-                style = MaterialTheme.typography.labelSmall,
-                color = if (source.hasExploreUrl) MaterialTheme.colorScheme.primary
-                else MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
+private fun CategorySectionLabel(title: String, trailing: String) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
         Text(
-            text = source.bookSourceGroup?.ifBlank { "未分组" } ?: "未分组",
-            style = MaterialTheme.typography.labelMedium,
+            text = title,
+            style = MaterialTheme.typography.labelSmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(top = 4.dp),
+        )
+        Spacer(Modifier.weight(1f))
+        Text(
+            text = trailing,
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
     }
 }
