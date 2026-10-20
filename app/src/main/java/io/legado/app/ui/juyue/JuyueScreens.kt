@@ -53,12 +53,14 @@ import io.legado.app.ui.about.AboutActivity
 import io.legado.app.ui.book.source.manage.BookSourceActivity
 import io.legado.app.ui.config.ConfigActivity
 import io.legado.app.ui.config.ConfigTag
+import io.legado.app.utils.startActivityForBook
 import kotlin.math.min
 
 @Composable
 fun BookshelfScreen() {
+    val context = LocalContext.current
     val books by remember {
-        appDb.bookDao.flowByGroup(BookGroup.IdRoot)
+        appDb.bookDao.flowByGroup(BookGroup.IdAll)
     }.collectAsState(initial = emptyList())
     val groups by remember {
         appDb.bookGroupDao.flowSelect()
@@ -136,7 +138,11 @@ fun BookshelfScreen() {
             }
         } else {
             itemsIndexed(books) { index, book ->
-                BookshelfBookCard(book = book, index = index)
+                BookshelfBookCard(
+                    book = book,
+                    index = index,
+                    onClick = { context.startActivityForBook(book) },
+                )
             }
         }
         item(span = { GridItemSpan(maxLineSpan) }) {
@@ -188,13 +194,14 @@ private fun BookshelfTopBar() {
 }
 
 @Composable
-private fun BookshelfBookCard(book: Book, index: Int) {
+private fun BookshelfBookCard(book: Book, index: Int, onClick: () -> Unit) {
     val shape = RoundedCornerShape(2.dp)
     Column(
         modifier = Modifier
             .fillMaxWidth()
             .background(MaterialTheme.colorScheme.surface, shape)
             .border(1.dp, MaterialTheme.colorScheme.outline, shape)
+            .clickable(onClick = onClick)
             .padding(6.dp),
     ) {
         Box(
@@ -205,12 +212,19 @@ private fun BookshelfBookCard(book: Book, index: Int) {
                 .background(MaterialTheme.colorScheme.surfaceVariant),
         ) {
             if (book.coverUrl.isNullOrBlank()) {
-                Text(
-                    text = book.name.take(1),
-                    style = MaterialTheme.typography.titleLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(10.dp),
-                )
+                Column(Modifier.padding(10.dp)) {
+                    Text(
+                        text = "NO COVER",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Spacer(Modifier.height(6.dp))
+                    Text(
+                        text = book.name.take(2),
+                        style = MaterialTheme.typography.titleLarge,
+                        color = MaterialTheme.colorScheme.onSurface,
+                    )
+                }
             } else {
                 GlideImage(
                     model = book.coverUrl,
