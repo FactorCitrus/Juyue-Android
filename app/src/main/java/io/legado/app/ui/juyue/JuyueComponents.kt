@@ -24,6 +24,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -88,7 +91,20 @@ fun JuyuePageHeader(
     modifier: Modifier = Modifier,
     trailing: String? = null,
 ) {
-    JuyuePanel(modifier = modifier.fillMaxWidth()) {
+    val accent = MaterialTheme.colorScheme.primary
+    JuyuePanel(
+        modifier = modifier
+            .fillMaxWidth()
+            .drawWithContent {
+                drawContent()
+                val inset = 14.dp.toPx()
+                drawRect(
+                    color = accent,
+                    topLeft = Offset(8.dp.toPx(), inset),
+                    size = Size(3.dp.toPx(), size.height - inset * 2),
+                )
+            }
+    ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
