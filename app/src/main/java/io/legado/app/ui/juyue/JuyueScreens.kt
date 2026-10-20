@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
@@ -793,7 +794,11 @@ private fun SettingsFooter(
     buildTime: String,
     onDiagnostics: () -> Unit,
 ) {
-    JuyuePanel(modifier = Modifier.fillMaxWidth()) {
+    JuyuePanel(
+        modifier = Modifier
+            .fillMaxWidth()
+            .heightIn(min = 96.dp)
+    ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Box(
                 Modifier
@@ -815,10 +820,10 @@ private fun SettingsFooter(
                     .background(MaterialTheme.colorScheme.outline)
             )
         }
+        Spacer(Modifier.height(6.dp))
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(top = 10.dp)
                 .clickable(onClick = onDiagnostics),
             verticalAlignment = Alignment.Bottom,
         ) {
