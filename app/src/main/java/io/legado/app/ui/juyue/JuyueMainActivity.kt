@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.offset
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.getValue
@@ -70,6 +71,7 @@ private fun JuyueApp() {
                 }
                 .padding(padding)
                 .statusBarsPadding()
+                .offset(y = (-10).dp)
         ) {
             when (selected) {
                 0 -> BookshelfScreen(onBookClick = { detailBook = it })

@@ -129,7 +129,7 @@ fun JuyuePageHeader(
         }
         Text(
             text = title,
-            style = MaterialTheme.typography.titleLarge.copy(fontSize = 30.sp, lineHeight = 36.sp),
+            style = MaterialTheme.typography.titleLarge.copy(fontSize = 32.sp, lineHeight = 38.sp),
             color = MaterialTheme.colorScheme.onSurface,
             modifier = Modifier.padding(top = 10.dp),
         )
@@ -213,7 +213,7 @@ fun JuyueBottomBar(
     ) {
         Row(
             modifier = Modifier
-                .fillMaxWidth(0.70f)
+                .fillMaxWidth(0.68f)
                 .height(56.dp)
                 .shadow(10.dp, shape)
                 .background(MaterialTheme.colorScheme.surface, shape)
