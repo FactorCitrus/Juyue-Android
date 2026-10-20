@@ -12,13 +12,14 @@
         android:layout_height="match_parent"
         android:contentDescription="@string/bg_image"
         android:scaleType="centerCrop"
+        android:visibility="gone"
         app:layout_constraintTop_toTopOf="parent" />
 
     <LinearLayout
         android:id="@+id/vw_bg"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:background="#50000000"
+        android:background="@color/transparent"
         android:orientation="vertical">
 
         <io.legado.app.ui.widget.TitleBar
@@ -26,8 +27,8 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             app:layout_constraintTop_toTopOf="parent"
-            app:themeMode="dark"
-            app:title="@string/book_info" />
+            app:themeMode="light"
+            app:title="书籍详情" />
 
         <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
             android:id="@+id/refresh_layout"
@@ -120,8 +121,9 @@
                                     android:includeFontPadding="false"
                                     android:singleLine="true"
                                     android:text="@string/book_name"
-                                    android:textColor="@color/primaryText"
-                                    android:textSize="18sp"
+                                    android:textColor="@color/juyue_ink"
+                                    android:textSize="22sp"
+                                    android:textStyle="bold"
                                     tools:ignore="RtlHardcoded" />
                             </HorizontalScrollView>
 
@@ -177,7 +179,7 @@
                                     android:paddingRight="6dp"
                                     android:singleLine="true"
                                     android:text="@string/author"
-                                    android:textColor="@color/tv_text_summary"
+                                    android:textColor="@color/juyue_secondary_ink"
                                     android:textSize="13sp"
                                     tools:ignore="NestedWeights,RtlHardcoded,RtlSymmetry" />
 
