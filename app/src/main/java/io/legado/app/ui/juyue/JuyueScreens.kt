@@ -4,6 +4,7 @@ package io.legado.app.ui.juyue
 
 import android.content.Intent
 import androidx.activity.compose.BackHandler
+import androidx.fragment.app.FragmentActivity
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -21,6 +22,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.grid.GridCells
@@ -64,12 +66,14 @@ import io.legado.app.data.entities.Book
 import io.legado.app.data.entities.BookGroup
 import io.legado.app.data.entities.BookSourcePart
 import io.legado.app.ui.about.AboutActivity
+import io.legado.app.ui.about.CrashLogsDialog
 import io.legado.app.ui.book.explore.ExploreShowActivity
 import io.legado.app.ui.book.search.SearchActivity
 import io.legado.app.ui.book.source.manage.BookSourceActivity
 import io.legado.app.ui.config.ConfigActivity
 import io.legado.app.ui.config.ConfigTag
 import io.legado.app.utils.startActivityForBook
+import io.legado.app.help.AppWebDav
 import kotlin.math.min
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -656,6 +660,12 @@ private fun CategorySourceCard(source: BookSourcePart, onClick: () -> Unit) {
 @Composable
 fun SettingsScreen() {
     val context = LocalContext.current
+    val bookCount by remember {
+        appDb.bookDao.flowAll()
+    }.collectAsState(initial = emptyList())
+    val sourceCount by remember {
+        appDb.bookSourceDao.flowAll()
+    }.collectAsState(initial = emptyList())
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(16.dp),
@@ -734,10 +744,74 @@ fun SettingsScreen() {
             }
         }
         item {
+            SettingsFooter(
+                bookCount = bookCount.size,
+                sourceCount = sourceCount.size,
+                webDavConfigured = AppWebDav.isOk,
+                onDiagnostics = {
+                    if (context is FragmentActivity) {
+                        CrashLogsDialog().show(context.supportFragmentManager, "CrashLogs")
+                    }
+                },
+            )
+        }
+    }
+}
+
+@Composable
+private fun SettingsFooter(
+    bookCount: Int,
+    sourceCount: Int,
+    webDavConfigured: Boolean,
+    onDiagnostics: () -> Unit,
+) {
+    JuyuePanel(modifier = Modifier.fillMaxWidth()) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Box(
+                Modifier
+                    .width(14.dp)
+                    .height(2.dp)
+                    .background(MaterialTheme.colorScheme.primary)
+            )
             Text(
                 text = "END OF MODULES / 05",
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(start = 8.dp),
+            )
+            Box(
+                Modifier
+                    .weight(1f)
+                    .padding(start = 8.dp)
+                    .height(0.5.dp)
+                    .background(MaterialTheme.colorScheme.outline)
+            )
+        }
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 10.dp)
+                .clickable(onClick = onDiagnostics),
+            verticalAlignment = Alignment.Bottom,
+        ) {
+            Column {
+                Text(
+                    text = "v4.7.10.4",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurface,
+                )
+                Text(
+                    text = "书架 $bookCount 本 · 书源 $sourceCount 个 · WebDAV ${if (webDavConfigured) "已配置" else "未配置"}",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            Spacer(Modifier.weight(1f))
+            Text(
+                text = "诊断日志  ›",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.padding(start = 8.dp),
             )
         }
     }
