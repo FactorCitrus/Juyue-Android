@@ -22,6 +22,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
@@ -43,6 +44,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -60,13 +62,18 @@ import io.legado.app.R
 import io.legado.app.data.appDb
 import io.legado.app.data.entities.Book
 import io.legado.app.data.entities.BookGroup
+import io.legado.app.data.entities.BookSourcePart
 import io.legado.app.ui.about.AboutActivity
+import io.legado.app.ui.book.explore.ExploreShowActivity
 import io.legado.app.ui.book.search.SearchActivity
 import io.legado.app.ui.book.source.manage.BookSourceActivity
 import io.legado.app.ui.config.ConfigActivity
 import io.legado.app.ui.config.ConfigTag
 import io.legado.app.utils.startActivityForBook
 import kotlin.math.min
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 @Composable
 fun BookshelfScreen(onBookClick: (Book) -> Unit = {}) {
@@ -565,6 +572,11 @@ private fun DetailAction(
 
 @Composable
 fun CategoryScreen() {
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    val sources by remember {
+        appDb.bookSourceDao.flowEnabledExplore()
+    }.collectAsState(initial = emptyList())
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(16.dp),
@@ -575,15 +587,69 @@ fun CategoryScreen() {
                 kicker = "CATEGORY / SOURCES",
                 title = "分类",
                 subtitle = "书源 · 分类 · 筛选 · 下拉刷新",
-                trailing = "SOURCE 00",
+                trailing = "SOURCE ${sources.size.toString().padStart(2, '0')}",
             )
         }
-        item {
-            JuyueEmptyState(
-                text = "当前没有发现源！",
-                modifier = Modifier.fillMaxWidth(),
+        if (sources.isEmpty()) {
+            item {
+                JuyueEmptyState(
+                    text = "当前没有发现源！",
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
+        } else {
+            items(sources, key = { it.bookSourceUrl }) { source ->
+                CategorySourceCard(
+                    source = source,
+                    onClick = {
+                        scope.launch(Dispatchers.IO) {
+                            val full = appDb.bookSourceDao.getBookSource(source.bookSourceUrl)
+                            val exploreUrl = full?.exploreUrl
+                            if (!exploreUrl.isNullOrBlank()) {
+                                withContext(Dispatchers.Main) {
+                                    context.startActivity(
+                                        Intent(context, ExploreShowActivity::class.java)
+                                            .putExtra("exploreName", source.bookSourceName)
+                                            .putExtra("sourceUrl", source.bookSourceUrl)
+                                            .putExtra("exploreUrl", exploreUrl)
+                                    )
+                                }
+                            }
+                        }
+                    },
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun CategorySourceCard(source: BookSourcePart, onClick: () -> Unit) {
+    JuyuePanel(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick),
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                text = source.bookSourceName,
+                style = MaterialTheme.typography.headlineSmall,
+                color = MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier.weight(1f),
+            )
+            Text(
+                text = if (source.hasExploreUrl) "DISCOVER" else "NO RULE",
+                style = MaterialTheme.typography.labelSmall,
+                color = if (source.hasExploreUrl) MaterialTheme.colorScheme.primary
+                else MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
+        Text(
+            text = source.bookSourceGroup?.ifBlank { "未分组" } ?: "未分组",
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(top = 4.dp),
+        )
     }
 }
 
