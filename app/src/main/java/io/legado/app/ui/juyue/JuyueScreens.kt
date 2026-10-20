@@ -774,6 +774,7 @@ fun SettingsScreen() {
             SettingsFooter(
                 bookCount = bookCount.size,
                 sourceCount = sourceCount.size,
+                rssCount = rssCount.size,
                 webDavConfigured = AppWebDav.isOk,
                 buildTime = buildTime,
                 onDiagnostics = {
@@ -790,6 +791,7 @@ fun SettingsScreen() {
 private fun SettingsFooter(
     bookCount: Int,
     sourceCount: Int,
+    rssCount: Int,
     webDavConfigured: Boolean,
     buildTime: String,
     onDiagnostics: () -> Unit,
@@ -834,7 +836,12 @@ private fun SettingsFooter(
                     color = MaterialTheme.colorScheme.onSurface,
                 )
                 Text(
-                    text = "书架 $bookCount 本 · 书源 $sourceCount 个 · WebDAV ${if (webDavConfigured) "已配置" else "未配置"}",
+                    text = "书架 $bookCount 本 · 书源 $sourceCount 个 · RSS $rssCount 个",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Text(
+                    text = "WebDAV ${if (webDavConfigured) "已配置" else "未配置"} · 本地库 · 点击右侧查看运行记录",
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
